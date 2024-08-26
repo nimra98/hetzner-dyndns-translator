@@ -3,7 +3,7 @@
 ## Run translator server
 
 ```bash
-docker run --rm -ti --port 3000:3000 anbraten/hetzner-dyndns-translator:latest
+docker run --rm -ti --port 3000:3000 nimra98/hetzner-dyndns-translator:latest
 ```
 
 ## Update records

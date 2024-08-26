@@ -3,8 +3,8 @@ package main
 import (
 	"net/http"
 
-	"codeberg.org/anbraten/hetzner-dyndns-translator/hetzner_dns"
 	"github.com/gin-gonic/gin"
+	"github.com/nimra98/hetzner-dyndns-translator/hetzner_dns"
 	"github.com/rs/zerolog/log"
 )
 
@@ -17,6 +17,7 @@ func main() {
 		value, _ := c.Params.Get("value")
 		if len(token) == 0 || len(zoneName) == 0 || len(recordName) == 0 || len(value) == 0 {
 			c.String(http.StatusBadRequest, "badreq")
+			log.Debug().Msgf("badreq - token: %s, zoneName: %s, recordName: %s, value: %s", token, zoneName, recordName, value)
 			return
 		}
 
@@ -25,12 +26,13 @@ func main() {
 		dns := hetzner_dns.NewHetznerDNS(token)
 		err := dns.PatchRecord(zoneName, recordName, value)
 		if err != nil {
-			log.Error().Msg(err.Error())
 			c.String(http.StatusBadRequest, "err")
+			log.Debug().Msgf("error - error: %s, token: %s, zoneName: %s, recordName: %s, value: %s", err.Error(), token, zoneName, recordName, value)
 			return
 		}
 
-		c.String(http.StatusAccepted, "good")
+		c.String(http.StatusOK, "OK")
+		log.Debug().Msgf("ok - token: %s, zoneName: %s, recordName: %s, value: %s", token, zoneName, recordName, value)
 	})
 
 	log.Debug().Msg("Starting server ...")
