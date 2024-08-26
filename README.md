@@ -15,3 +15,9 @@ curl my-server.tld:3000/dyndns/subdomainwithoutzonepart/example.tld/mysupersecre
 # update AAAA record
 curl my-server.tld:3000/dyndns/subdomainwithoutzonepart/example.tld/mysupersecrettoken/$(curl -s http://v6.ipv6-test.com/api/myip.php)
 ```
+
+## Build and push translator server
+
+```bash
+sudo make release VERSION=1.0.0
+```
