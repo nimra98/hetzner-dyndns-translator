@@ -1,17 +1,50 @@
-VERSION ?= 1.0.0
+.DEFAULT_GOAL := default
 
-all: build build-docker
+# If makefile is called using sudo or as root, ensure that this user is also logged into dockerhub
 
-build:
-	# Put VERSION in main.go by replacing the placeholder
+IMAGE ?= nimra98/hetzner-dyndns-translator
+LATEST ?= false
+
+ifndef VERSION
+$(error VERSION is not set)
+endif
+
+# Aktualisiere die Versionsnummer in main.go
+.PHONY: update-version
+update-version:
 	sed -i 's/const VERSION = ".*"/const VERSION = "$(VERSION)"/g' main.go
-	# Build the binary
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./hetzner-dyndns-translator github.com/nimra98/hetzner-dyndns-translator
 
-build-docker:
-	docker build --rm -t nimra98/hetzner-dyndns-translator:latest .
-	docker tag nimra98/hetzner-dyndns-translator:latest nimra98/hetzner-dyndns-translator:$(VERSION)
+.PHONY: build # Build the container image
+build: update-version
+	@docker buildx create --use --name=crossplat --node=crossplat && \
+	if [ "$(LATEST)" = "true" ]; then \
+		docker buildx build \
+		--output "type=docker,push=false" \
+		--tag $(IMAGE):$(VERSION) \
+		--tag $(IMAGE):latest \
+		. ; \
+	else \
+		docker buildx build \
+		--output "type=docker,push=false" \
+		--tag $(IMAGE):$(VERSION) \
+		. ; \
+	fi	
+	
 
-release: build build-docker
-	docker push nimra98/hetzner-dyndns-translator:latest
-	docker push nimra98/hetzner-dyndns-translator:$(VERSION)
+.PHONY: publish # Push the image to the remote registry
+publish: update-version
+	@docker buildx create --use --name=crossplat --node=crossplat && \
+	if [ "$(LATEST)" = "true" ]; then \
+		docker buildx build \
+		--platform linux/386,linux/amd64,linux/arm/v7,linux/arm64 \
+		--push \
+		--tag $(IMAGE):$(VERSION) \
+		--tag $(IMAGE):latest \
+		. ; \
+	else \
+		docker buildx build \
+		--platform linux/386,linux/amd64,linux/arm/v7,linux/arm64 \
+		--output "type=image,push=true" \
+		--tag $(IMAGE):$(VERSION) \
+		. ; \
+	fi

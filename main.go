@@ -1,15 +1,14 @@
 package main
 
 import (
-	"net/http"
-
 	"log"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nimra98/hetzner-dyndns-translator/hetzner_dns"
 )
 
-const VERSION = "1.3.0"
+const VERSION = "1.4.0"
 
 func main() {
 	// Set release mode for Gin
