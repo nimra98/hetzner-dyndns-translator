@@ -30,4 +30,4 @@ COPY --from=builder hetzner-dyndns-translator hetzner-dyndns-translator
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
 # Run
-CMD ["/hetzner-dyndns-translator"]
+CMD ["/app/hetzner-dyndns-translator"]
