@@ -176,7 +176,8 @@ func (h *HetznerDNS) updateRecord(record Record) error {
 	return nil
 }
 
-// PatchRecord updates the value of a DNS record in a specified zone.
+// PatchRecord updates the IP value of a DNS record in a specified zone.
+// All other fields of the record remain unchanged (e.g., name, TTL, type).
 //
 // Parameters:
 // - zoneName: The name of the zone containing the DNS record.
