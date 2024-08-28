@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nimra98/hetzner-dyndns-translator/hetzner_dns"
@@ -14,8 +15,14 @@ func main() {
 	// Set release mode for Gin
 	gin.SetMode(gin.ReleaseMode)
 
-	// Set port to 3000
+	// Get port from ENV variable or set to 3000 if not provided
 	port := "3000"
+	if os.Getenv("PORT") != "" {
+		port = os.Getenv("PORT")
+		log.Printf("Port supplied through ENV: %s", port)
+	} else {
+		log.Print("Port not supplied through ENV, using default port 3000")
+	}
 
 	r := gin.Default()
 
