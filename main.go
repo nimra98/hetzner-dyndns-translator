@@ -14,6 +14,9 @@ func main() {
 	// Set release mode for Gin
 	gin.SetMode(gin.ReleaseMode)
 
+	// Set port to 3000
+	port := "3000"
+
 	r := gin.Default()
 
 	r.GET("/dyndns/:recordName/:zoneName/:token/:value", func(c *gin.Context) {
@@ -40,8 +43,8 @@ func main() {
 		log.Printf("ok - token: %s, zoneName: %s, recordName: %s, value: %s", token, zoneName, recordName, value)
 	})
 
-	log.Printf("Starting server ...")
+	log.Printf("Starting server on Port " + port + " ...")
 	log.Printf("Translator Version: %s", VERSION)
 
-	r.Run(":3000")
+	r.Run(":" + port)
 }

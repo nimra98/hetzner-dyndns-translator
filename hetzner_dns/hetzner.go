@@ -38,6 +38,7 @@ func NewHetznerDNS(accessToken string) *HetznerDNS {
 }
 
 // findZone searches for a DNS zone by its name using the Hetzner DNS API.
+// According to API documentation: https://dns.hetzner.com/api-docs#operation/GetZones
 //
 // Parameters:
 // - zoneName: The name of the zone to search for.
@@ -86,6 +87,7 @@ func (h *HetznerDNS) findZone(zoneName string) (*Zone, error) {
 }
 
 // findRecord searches for a DNS record in a specific zone.
+// According to API documentation: https://dns.hetzner.com/api-docs#operation/GetRecords
 //
 // Parameters:
 // - zoneId: The ID of the zone in which to search for the record.
@@ -98,8 +100,6 @@ func (h *HetznerDNS) findZone(zoneName string) (*Zone, error) {
 // This function sends a GET request to the Hetzner DNS API to retrieve all records in the specified zone.
 // It then searches the response to find the record with the specified name.
 func (h *HetznerDNS) findRecord(zoneId, recordName string) (*Record, error) {
-	// Get Record (GET https://dns.hetzner.com/api/v1/records?zone_id=)
-
 	// Create request
 	url := fmt.Sprintf("https://dns.hetzner.com/api/v1/records?zone_id=%s", zoneId)
 	req, err := http.NewRequest("GET", url, nil)
@@ -135,6 +135,7 @@ func (h *HetznerDNS) findRecord(zoneId, recordName string) (*Record, error) {
 }
 
 // updateRecord updates a DNS record using the Hetzner DNS API.
+// According to API documentation: https://dns.hetzner.com/api-docs#operation/UpdateRecord
 //
 // Parameters:
 // - record: The Record struct containing the updated information for the DNS record.
@@ -146,8 +147,8 @@ func (h *HetznerDNS) findRecord(zoneId, recordName string) (*Record, error) {
 // It marshals the record into JSON, creates the request with the appropriate headers, and sends it.
 // If any step fails, it returns an error.
 func (h *HetznerDNS) updateRecord(record Record) error {
-	// Update Record (PUT https://dns.hetzner.com/api/v1/records/{RecordID})
 
+	// Marshal the record into JSON
 	data, err := json.Marshal(record)
 	if err != nil {
 		return err
@@ -199,6 +200,7 @@ func (h *HetznerDNS) PatchRecord(zoneName, recordName, value string) error {
 		return err
 	}
 
+	// Overwrite the IP address with the new value
 	record.Value = value
 
 	return h.updateRecord(*record)
