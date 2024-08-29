@@ -31,8 +31,8 @@ build: update-version
 	fi	
 	
 
-.PHONY: publish # Push the image to the remote registry
-publish: update-version
+.PHONY: release # Push the image to the remote registry
+release: update-version
 	@docker buildx create --use --name=crossplat --node=crossplat && \
 	if [ "$(LATEST)" = "true" ]; then \
 		docker buildx build \
