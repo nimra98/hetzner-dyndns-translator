@@ -1,5 +1,11 @@
 # Hetzner Dyndns Translator
 
+Hetzner Dyndns Translator ermöglicht den Zugriff auf die DNS API von Hetzner in einem Format, das mit dem bei Fritz!Boxen eingebauten DynDNS-Dienst kompatibel ist.
+Die Software ist als Docker-Image verfügbar und kann einfach über Docker Hub bezogen werden.
+
+Hetzner Dyndns Translator provides access to the Hetzner DNS API in a format compatible with the built-in DynDNS service of Fritz!Box devices.
+The software is available as a Docker image and can be easily obtained from Docker Hub.
+
 ## Docker Hub
 
 The docker images are available on [Docker Hub](https://hub.docker.com/r/nimra98/hetzner-dyndns-translator).
