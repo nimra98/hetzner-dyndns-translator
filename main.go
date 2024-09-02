@@ -40,7 +40,11 @@ func main() {
 	// If Auth Token is not provided, the URL will be /dyndns/:recordName/:zoneName/:token/:value
 	// The Auth Token will be checked in the handler function
 
-	r := gin.Default()
+	r := gin.New()
+	if os.Getenv("SHOW_HETZNER_API_TOKEN") == "true" {
+		// add logger to gin to show full request
+		r.Use(gin.Logger())
+	}
 
 	// Route abhängig von SERVICE_AUTH_TOKEN erstellen
 	if service_auth_token == "" {
@@ -52,6 +56,7 @@ func main() {
 			// Auth Token überprüfen
 			if c.Param("authToken") != service_auth_token {
 				c.String(http.StatusUnauthorized, "unauthorized")
+				log.Print("Unauthorized request with invalid Auth Token: " + c.Param("authToken") + " - from IP: " + c.ClientIP())
 				return
 			}
 			handleRequest(c)
