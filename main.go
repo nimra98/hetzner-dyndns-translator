@@ -9,7 +9,8 @@ import (
 	"github.com/nimra98/hetzner-dyndns-translator/hetzner_dns"
 )
 
-const VERSION = "1.5.0"
+// Override Version with build flag -ldflags "-X main.VERSION=1.0.0"
+var VERSION = "v1.0.0"
 
 func main() {
 	// Set release mode for Gin

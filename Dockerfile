@@ -6,6 +6,7 @@ ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 ARG TARGETOS
 ARG TARGETARCH
+ARG VERSION
 
 # Set destination for COPY
 WORKDIR /app
@@ -19,7 +20,7 @@ RUN go mod download
 COPY *.go ./
 
 # Build
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /hetzner-dyndns-translator
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags "-X main.VERSION=${VERSION}" -o /hetzner-dyndns-translator
 
 FROM scratch
 
