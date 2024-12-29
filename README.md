@@ -19,6 +19,7 @@ docker run --rm -p 3000:3000 -e SERVICE_AUTH_TOKEN=mysupersecrettoken -e SHOW_HE
 ```
 
 ### Standalone http servicce
+
 ```yaml
 services:
   translator:
@@ -32,6 +33,7 @@ services:
 ```
 
 ### Behind traefik reverse proxy
+
 ```yaml
 services:
   dyndns-translator:
@@ -63,11 +65,20 @@ networks:
 
 ```bash
 # update A record
-curl dyndns-translator.ondomain.tld[:Port]/[SERVICE_AUTH_TOKEN]/dyndns/subdomainwithoutzonepart/example.tld/Hetzner_API_Token/$(curl -s http://v4.ipv6-test.com/api/myip.php)
+curl dyndns-translator.ondomain.tld[:Port]/dyndns/[SERVICE_AUTH_TOKEN]/subdomainwithoutzonepart/example.tld/Hetzner_API_Token/$(curl -s http://v4.ipv6-test.com/api/myip.php)
 
 # update AAAA record
-curl dyndns-translator.ondomain.tld[:Port]/[SERVICE_AUTH_TOKEN]/dyndns/subdomainwithoutzonepart/example.tld/Hetzner_API_Token/$(curl -s http://v6.ipv6-test.com/api/myip.php)
+curl dyndns-translator.ondomain.tld[:Port]/dyndns/[SERVICE_AUTH_TOKEN]/subdomainwithoutzonepart/example.tld/Hetzner_API_Token/$(curl -s http://v6.ipv6-test.com/api/myip.php)
 ```
+
+For the Fritz!Box configuration, the following values are required:
+
+| Setting               | Value                                      |
+|-----------------------|--------------------------------------------|
+| Update URL            | `dyndns-translator.ondomain.tld[:Port]/dyndns/[SERVICE_AUTH_TOKEN]/subdomainwithoutzonepart/example.tld/Hetzner_API_Token/<ip6addr>`    |
+| Domain name           | Does not matter                            |
+| Username              | Does not matter                            |
+| Password              | Does not matter                            |
 
 ## Build and push translator server
 
