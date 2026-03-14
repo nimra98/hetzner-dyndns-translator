@@ -98,11 +98,10 @@ func (h *CloudHetznerDNS) findRRset(zoneId, recordName string, value string) (*R
 }
 
 func (h *CloudHetznerDNS) updateRRset(zoneId string, rrset RRset) error {
-	// Create update request without ID in body
-	update := RRsetUpdateRequest{
-		Name:    rrset.Name,
-		Type:    rrset.Type,
-		TTL:     rrset.TTL,
+	// Create update request with only records field as required by set_records action
+	update := struct {
+		Records []Value `json:"records"`
+	}{
 		Records: rrset.Records,
 	}
 
@@ -111,8 +110,11 @@ func (h *CloudHetznerDNS) updateRRset(zoneId string, rrset RRset) error {
 		return err
 	}
 
-	url := fmt.Sprintf("https://api.hetzner.cloud/v1/zones/%s/rrsets/%s", zoneId, rrset.GetId())
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
+	// Correct endpoint for setting records in an RRset
+	url := fmt.Sprintf("https://api.hetzner.cloud/v1/zones/%s/rrsets/%s/%s/actions/set_records",
+		zoneId, rrset.Name, rrset.Type)
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}

@@ -77,14 +77,6 @@ type RRset struct {
 	Records []Value         `json:"records"`
 }
 
-// RRsetUpdateRequest is used for PUT requests to update an RRset.
-type RRsetUpdateRequest struct {
-	Name    string  `json:"name"`
-	Type    string  `json:"type"`
-	TTL     int     `json:"ttl"`
-	Records []Value `json:"records"`
-}
-
 // GetId returns the ID as a string.
 func (r *RRset) GetId() string {
 	var s string
