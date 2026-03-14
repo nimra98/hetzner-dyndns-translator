@@ -16,8 +16,7 @@ type DNSProvider interface {
 
 // NewHetznerDNS creates a new DNSProvider based on the HETZNER_API_VERSION environment variable.
 func NewHetznerDNS(accessToken string) DNSProvider {
-	apiVersion := os.Getenv("HETZNER_API_VERSION")
-	if apiVersion == "cloud" {
+	if os.Getenv("HETZNER_API_VERSION") == "cloud" {
 		return NewCloudHetznerDNS(accessToken)
 	}
 	return NewLegacyHetznerDNS(accessToken)
@@ -49,11 +48,10 @@ func (h *LegacyHetznerDNS) findZone(zoneName string) (*Zone, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	respBody, _ := io.ReadAll(resp.Body)
 
 	var zones Zones
-	err = json.Unmarshal(respBody, &zones)
-	if err != nil {
+	body, _ := io.ReadAll(resp.Body)
+	if err := json.Unmarshal(body, &zones); err != nil {
 		return nil, err
 	}
 
@@ -79,11 +77,10 @@ func (h *LegacyHetznerDNS) findRecord(zoneId, recordName string) (*Record, error
 		return nil, err
 	}
 	defer resp.Body.Close()
-	respBody, _ := io.ReadAll(resp.Body)
 
 	var records Records
-	err = json.Unmarshal(respBody, &records)
-	if err != nil {
+	body, _ := io.ReadAll(resp.Body)
+	if err := json.Unmarshal(body, &records); err != nil {
 		return nil, err
 	}
 

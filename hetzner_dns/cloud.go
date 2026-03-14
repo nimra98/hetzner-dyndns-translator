@@ -56,7 +56,6 @@ func (h *CloudHetznerDNS) findZone(zoneName string) (*Zone, error) {
 }
 
 func (h *CloudHetznerDNS) findRRset(zoneId, recordName string, value string) (*RRset, error) {
-	// Determine type based on IP value
 	recordType := "A"
 	if strings.Contains(value, ":") {
 		recordType = "AAAA"
@@ -82,7 +81,6 @@ func (h *CloudHetznerDNS) findRRset(zoneId, recordName string, value string) (*R
 		return nil, err
 	}
 
-	// In Cloud API, root record is often "@"
 	searchName := recordName
 	if recordName == "" || recordName == "@" {
 		searchName = "@"
@@ -98,7 +96,6 @@ func (h *CloudHetznerDNS) findRRset(zoneId, recordName string, value string) (*R
 }
 
 func (h *CloudHetznerDNS) updateRRset(zoneId string, rrset RRset) error {
-	// Create update request with only records field as required by set_records action
 	update := struct {
 		Records []Value `json:"records"`
 	}{
@@ -110,7 +107,6 @@ func (h *CloudHetznerDNS) updateRRset(zoneId string, rrset RRset) error {
 		return err
 	}
 
-	// Correct endpoint for setting records in an RRset
 	url := fmt.Sprintf("https://api.hetzner.cloud/v1/zones/%s/rrsets/%s/%s/actions/set_records",
 		zoneId, rrset.Name, rrset.Type)
 
@@ -147,7 +143,6 @@ func (h *CloudHetznerDNS) PatchRecord(zoneName, recordName, value string) error 
 		return err
 	}
 
-	// Update records in RRset
 	rrset.Records = []Value{{Value: value}}
 
 	return h.updateRRset(zone.GetId(), *rrset)
