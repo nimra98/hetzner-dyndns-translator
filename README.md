@@ -83,3 +83,11 @@ make build VERSION=1.0.0 LATEST=true
 # Build the docker image, tag it with the version and latest, push it to the docker hub
 make release VERSION=1.0.0 LATEST=true
 ```
+
+## Known Limitations (Hetzner Cloud API)
+
+When using `HETZNER_API_VERSION=cloud`, please be aware of the following technical details:
+
+1. **Asynchronous Updates:** The new Hetzner Cloud API processes DNS changes as asynchronous "Actions". This tool considers an update successful as soon as the API accepts the request (`201 Created`). It does **not** wait for the action to finish (`finished: null`). In rare cases, the DNS update might take a few seconds to become active.
+2. **Pagination:** Currently, the tool only fetches the first page of DNS zones (default limit is usually 25). If you manage a large number of zones, ensure the target zone is among the first 25, or contribute a pagination fix.
+3. **Record Matching:** The tool identifies records by their name and type (`A` or `AAAA`). Ensure that the record exists in the Hetzner Console before the first update.
