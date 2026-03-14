@@ -128,7 +128,7 @@ func (h *CloudHetznerDNS) updateRRset(zoneId string, rrset RRset) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("failed to update RRset, status: %d, body: %s", resp.StatusCode, string(body))
 	}
