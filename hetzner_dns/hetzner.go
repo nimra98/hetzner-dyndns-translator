@@ -9,12 +9,15 @@ import (
 	"os"
 )
 
-// DNSProvider defines the interface for interacting with various Hetzner DNS APIs.
+// DNSProvider defines the common interface for different Hetzner DNS API implementations.
+// It allows the main application to remain agnostic of the underlying API version (Legacy vs. Cloud).
 type DNSProvider interface {
+	// PatchRecord finds a DNS record by name in a given zone and updates its value (IP).
 	PatchRecord(zoneName, recordName, value string) error
 }
 
-// NewHetznerDNS creates a new DNSProvider based on the HETZNER_API_VERSION environment variable.
+// NewHetznerDNS is a factory function that returns the appropriate DNSProvider implementation.
+// It switches between 'legacy' and 'cloud' based on the HETZNER_API_VERSION environment variable.
 func NewHetznerDNS(accessToken string) DNSProvider {
 	if os.Getenv("HETZNER_API_VERSION") == "cloud" {
 		return NewCloudHetznerDNS(accessToken)
@@ -22,13 +25,13 @@ func NewHetznerDNS(accessToken string) DNSProvider {
 	return NewLegacyHetznerDNS(accessToken)
 }
 
-// LegacyHetznerDNS represents a client for interacting with the legacy Hetzner DNS API.
+// LegacyHetznerDNS implements the DNSProvider interface for the deprecated Hetzner DNS API (dns.hetzner.com).
 type LegacyHetznerDNS struct {
 	accessToken string
 	client      http.Client
 }
 
-// NewLegacyHetznerDNS creates a new instance of LegacyHetznerDNS.
+// NewLegacyHetznerDNS creates a new client for the legacy DNS API.
 func NewLegacyHetznerDNS(accessToken string) *LegacyHetznerDNS {
 	return &LegacyHetznerDNS{
 		accessToken: accessToken,
@@ -36,6 +39,7 @@ func NewLegacyHetznerDNS(accessToken string) *LegacyHetznerDNS {
 	}
 }
 
+// findZone retrieves zone information by its name from the legacy API.
 func (h *LegacyHetznerDNS) findZone(zoneName string) (*Zone, error) {
 	req, err := http.NewRequest("GET", "https://dns.hetzner.com/api/v1/zones", nil)
 	if err != nil {
@@ -64,6 +68,7 @@ func (h *LegacyHetznerDNS) findZone(zoneName string) (*Zone, error) {
 	return nil, fmt.Errorf("Zone not found")
 }
 
+// findRecord retrieves a specific DNS record by name within a zone using the legacy API.
 func (h *LegacyHetznerDNS) findRecord(zoneId, recordName string) (*Record, error) {
 	url := fmt.Sprintf("https://dns.hetzner.com/api/v1/records?zone_id=%s", zoneId)
 	req, err := http.NewRequest("GET", url, nil)
@@ -93,6 +98,7 @@ func (h *LegacyHetznerDNS) findRecord(zoneId, recordName string) (*Record, error
 	return nil, fmt.Errorf("Record not found")
 }
 
+// updateRecord sends a PUT request to update an existing DNS record in the legacy API.
 func (h *LegacyHetznerDNS) updateRecord(record Record) error {
 	data, err := json.Marshal(record)
 	if err != nil {
@@ -122,6 +128,7 @@ func (h *LegacyHetznerDNS) updateRecord(record Record) error {
 	return nil
 }
 
+// PatchRecord implements the DNSProvider interface for the legacy API.
 func (h *LegacyHetznerDNS) PatchRecord(zoneName, recordName, value string) error {
 	zone, err := h.findZone(zoneName)
 	if err != nil {

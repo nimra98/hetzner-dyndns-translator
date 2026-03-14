@@ -9,14 +9,15 @@ import (
 	"github.com/nimra98/hetzner-dyndns-translator/hetzner_dns"
 )
 
-// Override Version with build flag -ldflags "-X main.VERSION=1.0.0"
+// VERSION holds the current application version. 
+// It can be overridden during build time using: -ldflags "-X main.VERSION=1.0.0"
 var VERSION = "v1.0.0"
 
 func main() {
-	// Set release mode for Gin
+	// Disable Gin's debug output for a cleaner production log
 	gin.SetMode(gin.ReleaseMode)
 
-	// Get port from ENV variable or set to 3000 if not provided
+	// Determine the listening port from environment or use 3000 as default
 	port := "3000"
 	if os.Getenv("PORT") != "" {
 		port = os.Getenv("PORT")
@@ -25,7 +26,7 @@ func main() {
 		log.Print("Port not supplied through ENV, using default port 3000")
 	}
 
-	// Get Auth Token to access this service from ENV variable
+	// Service authentication: if SERVICE_AUTH_TOKEN is set, all requests must include it in the URL
 	service_auth_token := ""
 	if os.Getenv("SERVICE_AUTH_TOKEN") == "" {
 		log.Print("No SERVICE_AUTH_TOKEN provided in ENV.")
@@ -35,25 +36,21 @@ func main() {
 		log.Print("SERVICE_AUTH_TOKEN provided in ENV")
 	}
 
-	// Create url structure depending on SERVICE_AUTH_TOKEN
-	// If Auth Token is provided, the URL will be /dyndns/:authtoken/:recordName/:zoneName/:token/:value
-	// If Auth Token is not provided, the URL will be /dyndns/:recordName/:zoneName/:token/:value
-	// The Auth Token will be checked in the handler function
-
 	r := gin.New()
+	
+	// Optional: logging of full requests (caution: might leak API tokens if not used carefully)
 	if os.Getenv("SHOW_HETZNER_API_TOKEN") == "true" {
-		// add logger to gin to show full request
 		r.Use(gin.Logger())
 	}
 
-	// Route abhängig von SERVICE_AUTH_TOKEN erstellen
+	// Define routes based on whether authentication is required
 	if service_auth_token == "" {
-		// Route ohne Auth Token
+		// Public route: /dyndns/:recordName/:zoneName/:token/:value
 		r.GET("/dyndns/:recordName/:zoneName/:token/:value", handleRequest)
 	} else {
-		// Route mit Auth Token
+		// Protected route: /dyndns/:authToken/:recordName/:zoneName/:token/:value
 		r.GET("/dyndns/:authToken/:recordName/:zoneName/:token/:value", func(c *gin.Context) {
-			// Auth Token überprüfen
+			// Validate service-level authentication
 			if c.Param("authToken") != service_auth_token {
 				c.String(http.StatusUnauthorized, "unauthorized")
 				log.Print("Unauthorized request with invalid Auth Token: " + c.Param("authToken") + " - from IP: " + c.ClientIP())
@@ -71,16 +68,20 @@ func main() {
 		log.Print("Awaiting requests in format /dyndns/:service_authToken/:recordName/:zoneName/:hetzner_api_token/:value")
 	}
 
+	// Start the HTTP server
 	r.Run(":" + port)
 }
 
-// Handler-Funktion für die Route
+// handleRequest processes the incoming DynDNS update request.
+// It extracts parameters from the URL, initializes the correct Hetzner DNS provider,
+// and performs the record update (Patch).
 func handleRequest(c *gin.Context) {
-	token := c.Param("token")
-	zoneName := c.Param("zoneName")
-	recordName := c.Param("recordName")
-	value := c.Param("value")
+	token := c.Param("token")       // Hetzner API Token
+	zoneName := c.Param("zoneName")   // DNS Zone (e.g. example.com)
+	recordName := c.Param("recordName") // Subdomain (e.g. fritzbox)
+	value := c.Param("value")       // New IP address
 
+	// Basic validation of required parameters
 	if token == "" || zoneName == "" || recordName == "" || value == "" {
 		c.String(http.StatusBadRequest, "badreq")
 		log.Printf("badreq - token: %s, zoneName: %s, recordName: %s, value: %s", token, zoneName, recordName, value)
@@ -88,7 +89,11 @@ func handleRequest(c *gin.Context) {
 	}
 
 	log.Printf("Updating %s.%s with new IP %s", recordName, zoneName, value)
+	
+	// Create provider (Legacy or Cloud) based on HETZNER_API_VERSION env variable
 	dns := hetzner_dns.NewHetznerDNS(token)
+	
+	// Execute the update
 	err := dns.PatchRecord(zoneName, recordName, value)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "error")
@@ -97,10 +102,12 @@ func handleRequest(c *gin.Context) {
 		return
 	}
 
+	// Return success to the client (e.g. Fritz!Box)
 	c.String(http.StatusOK, "success")
+	
 	if os.Getenv("SHOW_HETZNER_API_TOKEN") == "true" {
-		log.Printf("Transaktion ok, DNS updated - token: %s, zoneName: %s, recordName: %s, value: %s", token, zoneName, recordName, value)
+		log.Printf("Transaction ok, DNS updated - token: %s, zoneName: %s, recordName: %s, value: %s", token, zoneName, recordName, value)
 	} else {
-		log.Printf("Transaktion ok, DNS updated - token: redacted, zoneName: %s, recordName: %s, value: %s", zoneName, recordName, value)
+		log.Printf("Transaction ok, DNS updated - token: redacted, zoneName: %s, recordName: %s, value: %s", zoneName, recordName, value)
 	}
 }
