@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 // CloudHetznerDNS represents a client for the new Hetzner Cloud DNS API.
@@ -39,7 +40,6 @@ func (h *CloudHetznerDNS) findZone(zoneName string) (*Zone, error) {
 	}
 
 	var zones Zones
-	err = json.Unmarshal([]byte{}, &zones) // Will be populated from body
 	body, _ := io.ReadAll(resp.Body)
 	err = json.Unmarshal(body, &zones)
 	if err != nil {
@@ -55,7 +55,13 @@ func (h *CloudHetznerDNS) findZone(zoneName string) (*Zone, error) {
 	return nil, fmt.Errorf("Zone not found")
 }
 
-func (h *CloudHetznerDNS) findRRset(zoneId, recordName string) (*RRset, error) {
+func (h *CloudHetznerDNS) findRRset(zoneId, recordName string, value string) (*RRset, error) {
+	// Determine type based on IP value
+	recordType := "A"
+	if strings.Contains(value, ":") {
+		recordType = "AAAA"
+	}
+
 	url := fmt.Sprintf("https://api.hetzner.cloud/v1/zones/%s/rrsets", zoneId)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -76,19 +82,31 @@ func (h *CloudHetznerDNS) findRRset(zoneId, recordName string) (*RRset, error) {
 		return nil, err
 	}
 
+	// In Cloud API, root record is often "@"
+	searchName := recordName
+	if recordName == "" || recordName == "@" {
+		searchName = "@"
+	}
+
 	for _, rrset := range rrsets.RRsets {
-		// In Cloud API, recordName might be just the subdomain or the full name.
-		// Usually it's just the subdomain.
-		if rrset.Name == recordName {
+		if rrset.Name == searchName && rrset.Type == recordType {
 			return &rrset, nil
 		}
 	}
 
-	return nil, fmt.Errorf("RRset not found")
+	return nil, fmt.Errorf("RRset not found (name: %s, type: %s)", searchName, recordType)
 }
 
 func (h *CloudHetznerDNS) updateRRset(zoneId string, rrset RRset) error {
-	data, err := json.Marshal(rrset)
+	// Create update request without ID
+	update := RRsetUpdateRequest{
+		Name:    rrset.Name,
+		Type:    rrset.Type,
+		TTL:     rrset.TTL,
+		Records: rrset.Records,
+	}
+
+	data, err := json.Marshal(update)
 	if err != nil {
 		return err
 	}
@@ -122,13 +140,12 @@ func (h *CloudHetznerDNS) PatchRecord(zoneName, recordName, value string) error 
 		return err
 	}
 
-	rrset, err := h.findRRset(zone.GetId(), recordName)
+	rrset, err := h.findRRset(zone.GetId(), recordName, value)
 	if err != nil {
 		return err
 	}
 
-	// For DynDNS, we typically have only one record in the set.
-	// We replace all records in the set with the new IP.
+	// For DynDNS, we replace all records in the set with the new IP.
 	rrset.Records = []Value{{Value: value}}
 
 	return h.updateRRset(zone.GetId(), *rrset)
