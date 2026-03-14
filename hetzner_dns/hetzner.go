@@ -131,7 +131,7 @@ func (h *LegacyHetznerDNS) PatchRecord(zoneName, recordName, value string) error
 		return err
 	}
 
-	record, err := h.findRecord(zone.Id, recordName)
+	record, err := h.findRecord(zone.GetId(), recordName)
 	if err != nil {
 		return err
 	}

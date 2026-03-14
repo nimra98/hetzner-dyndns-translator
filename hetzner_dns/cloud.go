@@ -93,7 +93,7 @@ func (h *CloudHetznerDNS) updateRRset(zoneId string, rrset RRset) error {
 		return err
 	}
 
-	url := fmt.Sprintf("https://api.hetzner.cloud/v1/zones/%s/rrsets/%s", zoneId, rrset.Id)
+	url := fmt.Sprintf("https://api.hetzner.cloud/v1/zones/%s/rrsets/%s", zoneId, rrset.GetId())
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
 	if err != nil {
 		return err
@@ -122,7 +122,7 @@ func (h *CloudHetznerDNS) PatchRecord(zoneName, recordName, value string) error 
 		return err
 	}
 
-	rrset, err := h.findRRset(zone.Id, recordName)
+	rrset, err := h.findRRset(zone.GetId(), recordName)
 	if err != nil {
 		return err
 	}
@@ -131,5 +131,5 @@ func (h *CloudHetznerDNS) PatchRecord(zoneName, recordName, value string) error 
 	// We replace all records in the set with the new IP.
 	rrset.Records = []Value{{Value: value}}
 
-	return h.updateRRset(zone.Id, *rrset)
+	return h.updateRRset(zone.GetId(), *rrset)
 }
