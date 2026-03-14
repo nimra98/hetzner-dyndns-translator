@@ -55,14 +55,14 @@ func (h *CloudHetznerDNS) findZone(zoneName string) (*Zone, error) {
 	return nil, fmt.Errorf("Zone not found")
 }
 
-func (h *CloudHetznerDNS) findRRset(zoneId, recordName string, value string) (*RRset, error) {
+func (h *CloudHetznerDNS) findRecord(zoneId, recordName string, value string) (*CloudRecord, error) {
 	// Determine type based on IP value
 	recordType := "A"
 	if strings.Contains(value, ":") {
 		recordType = "AAAA"
 	}
 
-	url := fmt.Sprintf("https://api.hetzner.cloud/v1/zones/%s/rrsets", zoneId)
+	url := fmt.Sprintf("https://api.hetzner.cloud/v1/zones/%s/records", zoneId)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -76,8 +76,8 @@ func (h *CloudHetznerDNS) findRRset(zoneId, recordName string, value string) (*R
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
-	var rrsets RRsets
-	err = json.Unmarshal(body, &rrsets)
+	var records CloudRecords
+	err = json.Unmarshal(body, &records)
 	if err != nil {
 		return nil, err
 	}
@@ -88,30 +88,23 @@ func (h *CloudHetznerDNS) findRRset(zoneId, recordName string, value string) (*R
 		searchName = "@"
 	}
 
-	for _, rrset := range rrsets.RRsets {
-		if rrset.Name == searchName && rrset.Type == recordType {
-			return &rrset, nil
+	for _, record := range records.Records {
+		if record.Name == searchName && record.Type == recordType {
+			return &record, nil
 		}
 	}
 
-	return nil, fmt.Errorf("RRset not found (name: %s, type: %s)", searchName, recordType)
+	return nil, fmt.Errorf("Record not found (name: %s, type: %s)", searchName, recordType)
 }
 
-func (h *CloudHetznerDNS) updateRRset(zoneId string, rrset RRset) error {
-	// Create update request without ID
-	update := RRsetUpdateRequest{
-		Name:    rrset.Name,
-		Type:    rrset.Type,
-		TTL:     rrset.TTL,
-		Records: rrset.Records,
-	}
-
-	data, err := json.Marshal(update)
+func (h *CloudHetznerDNS) updateRecord(zoneId string, record CloudRecord) error {
+	// Create update request (Hetzner Cloud API uses the same format for PUT /records/{id})
+	data, err := json.Marshal(record)
 	if err != nil {
 		return err
 	}
 
-	url := fmt.Sprintf("https://api.hetzner.cloud/v1/zones/%s/rrsets/%s", zoneId, rrset.GetId())
+	url := fmt.Sprintf("https://api.hetzner.cloud/v1/zones/%s/records/%s", zoneId, record.GetId())
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
 	if err != nil {
 		return err
@@ -128,7 +121,7 @@ func (h *CloudHetznerDNS) updateRRset(zoneId string, rrset RRset) error {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("failed to update RRset, status: %d, body: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("failed to update record, status: %d, body: %s", resp.StatusCode, string(body))
 	}
 
 	return nil
@@ -140,13 +133,13 @@ func (h *CloudHetznerDNS) PatchRecord(zoneName, recordName, value string) error 
 		return err
 	}
 
-	rrset, err := h.findRRset(zone.GetId(), recordName, value)
+	record, err := h.findRecord(zone.GetId(), recordName, value)
 	if err != nil {
 		return err
 	}
 
-	// For DynDNS, we replace all records in the set with the new IP.
-	rrset.Records = []Value{{Value: value}}
+	// Update value
+	record.Value = value
 
-	return h.updateRRset(zone.GetId(), *rrset)
+	return h.updateRecord(zone.GetId(), *record)
 }

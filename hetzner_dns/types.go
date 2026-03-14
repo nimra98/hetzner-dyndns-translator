@@ -17,6 +17,33 @@ type Records struct {
 	Records []Record `json:"records"`
 }
 
+// CloudRecord represents a DNS record in the new Hetzner Cloud DNS API.
+type CloudRecord struct {
+	Id    json.RawMessage `json:"id,omitempty"`
+	Name  string          `json:"name"`
+	Type  string          `json:"type"`
+	Value string          `json:"value"`
+	TTL   int             `json:"ttl"`
+}
+
+// GetId returns the ID as a string.
+func (r *CloudRecord) GetId() string {
+	var s string
+	if err := json.Unmarshal(r.Id, &s); err == nil {
+		return s
+	}
+	var i int64
+	if err := json.Unmarshal(r.Id, &i); err == nil {
+		return json.Number(string(r.Id)).String()
+	}
+	return string(r.Id)
+}
+
+// CloudRecords represents a collection of DNS records in the Cloud API.
+type CloudRecords struct {
+	Records []CloudRecord `json:"records"`
+}
+
 // Zone represents a DNS zone in both APIs.
 type Zone struct {
 	Id   json.RawMessage `json:"id"`
