@@ -15,24 +15,26 @@ The docker images are available on [Docker Hub](https://hub.docker.com/r/nimra98
 ### Usage with docker CLI
 
 ```bash
-docker run --rm -p 3000:3000 -e SERVICE_AUTH_TOKEN=mysupersecrettoken -e SHOW_HETZNER_TOKEN=true nimra98/hetzner-dyndns-translator:latest
+docker run --rm -p 3000:3000 -e SERVICE_AUTH_TOKEN=mysupersecrettoken -e SHOW_HETZNER_TOKEN=true -e HETZNER_API_VERSION=cloud nimra98/hetzner-dyndns-translator:latest
 ```
 
-### Standalone http servicce
+### Configuration Parameters (Environment Variables)
 
-```yaml
-services:
-  translator:
-    image: nimra98/hetzner-dyndns-translator:latest
-    environment:
-      - PORT=3000 # optional, default is 3000, the port the server listens on
-      - SERVICE_AUTH_TOKEN=mysupersecrettoken # optional, default is none, the token that is required to access the service
-      - SHOW_HETZNER_API_TOKEN=true # optional, default is false, if set to true the hetzner api token is shown in the logs
-    ports:
-      - 3000:3000 # Depends on the PORT environment variable above
-```
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `3000` | The port the server listens on. |
+| `SERVICE_AUTH_TOKEN` | `none` | Optional token required to access the translator service. |
+| `SHOW_HETZNER_API_TOKEN` | `false` | If set to `true`, the Hetzner API token is shown in the logs (use for debugging only!). |
+| `HETZNER_API_VERSION` | `legacy` | Switch between `legacy` (dns.hetzner.com) and `cloud` (api.hetzner.cloud) API. |
 
-### Behind traefik reverse proxy
+### API Migration (Hetzner Console)
+
+Hetzner is migrating its DNS service to the main Hetzner Console (Cloud API). This tool supports both:
+
+1. **Legacy API (`HETZNER_API_VERSION=legacy`):** Uses tokens from `dns.hetzner.com`.
+2. **Cloud API (`HETZNER_API_VERSION=cloud`):** Uses project-based API tokens from the new Hetzner Console. **Required for migrated zones!**
+
+### Docker Compose Example
 
 ```yaml
 services:
@@ -40,28 +42,18 @@ services:
     image: nimra98/hetzner-dyndns-translator:latest
     container_name: dyndns-translator
     restart: always
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=web-proxy"
-      - "traefik.http.routers.dyndns-translator-ondomain.middlewares=sec@file, gzip@file"
-      - "traefik.http.routers.dyndns-translator-ondomain.rule=Host(`dyndns-translator.ondomain.tld`)"
-      - "traefik.http.routers.dyndns-translator-ondomain.tls.options=intermediate@file"
-      - "traefik.http.routers.dyndns-translator-ondomain.tls.certresolver=httpchallenge"
-      - "traefik.http.services.dyndns-translator.loadbalancer.server.port=3000" # Depends on the PORT environment variable above
     environment:
-        - PORT=3000 # optional, default is 3000, the port the server listens on
-        - SERVICE_AUTH_TOKEN=mysuperscrettoken # optional, default is none, the token that is required to access the service
-        - SHOW_HETZNER_API_TOKEN=true # optional, default is false, if set to true the hetzner api token is shown in the logs
-    networks:
-      - default
-
-networks:
-  default:
-    external:
-      name: web-proxy # The name of the traefik network
+      - PORT=3000
+      - SERVICE_AUTH_TOKEN=mysupersecrettoken
+      - HETZNER_API_VERSION=cloud # Set to 'cloud' for the new Hetzner DNS Console
+      - SHOW_HETZNER_API_TOKEN=false
+    ports:
+      - 3000:3000
 ```
 
 ## Update records
+
+The update URL format remains identical for both API versions. However, the `Hetzner_API_Token` must match the configured `HETZNER_API_VERSION`.
 
 ```bash
 # update A record
@@ -82,10 +74,12 @@ For the Fritz!Box configuration, the following values are required:
 
 ## Build and push translator server
 
+The project now requires **Go 1.25** for building.
+
 ```bash
 # Build the docker image, tag it with the version and latest, store in the local registry
-sudo make build VERSION=1.0.0 LATEST=true
+make build VERSION=1.0.0 LATEST=true
 
 # Build the docker image, tag it with the version and latest, push it to the docker hub
-sudo make release VERSION=1.0.0 LATEST=true
+make release VERSION=1.0.0 LATEST=true
 ```
