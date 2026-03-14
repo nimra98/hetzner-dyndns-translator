@@ -4,10 +4,7 @@
 
 IMAGE ?= nimra98/hetzner-dyndns-translator
 LATEST ?= false
-
-ifndef VERSION
-$(error VERSION is not set)
-endif
+VERSION ?= v1.0.0
 
 .PHONY: build # Build the container image
 build:

@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.24 AS builder
+FROM golang:1.25 AS builder
 
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 ARG TARGETOS
 ARG TARGETARCH
-ARG VERSION
+ARG VERSION=v1.0.0
 
 # Set destination for COPY
 WORKDIR /app
@@ -17,7 +17,7 @@ RUN go mod download
 
 # Copy the source code. Note the slash at the end, as explained in
 # https://docs.docker.com/engine/reference/builder/#copy
-COPY *.go ./
+COPY . ./
 
 # Build
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags "-X main.VERSION=${VERSION}" -o /hetzner-dyndns-translator
@@ -26,9 +26,10 @@ FROM scratch
 
 WORKDIR /app
 
-COPY --from=builder hetzner-dyndns-translator hetzner-dyndns-translator
-# copy certs from golang:1.23 image (from=builder specifies the first layer)
+# copy certs from builder
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+# copy binary from builder
+COPY --from=builder /hetzner-dyndns-translator ./
 
 # Run
 CMD ["/app/hetzner-dyndns-translator"]
