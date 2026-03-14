@@ -59,6 +59,7 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64
+          provenance: false
           tags: ${{ env.IMAGE_NAME }}:amd64
           build-args: |
             VERSION=${{ needs.prepare.outputs.version }}
@@ -95,6 +96,7 @@ jobs:
           context: .
           push: true
           platforms: linux/arm64
+          provenance: false
           tags: ${{ env.IMAGE_NAME }}:arm64
           build-args: |
             VERSION=${{ needs.prepare.outputs.version }}
@@ -122,7 +124,7 @@ jobs:
 
       - name: Create and push manifest
         run: |
-          for tag in $(echo "${{ steps.meta.outputs.tags }}" | tr ',' '\n'); do
+          for tag in ${{ steps.meta.outputs.tags }}; do
             docker manifest create $tag \
               ${{ env.IMAGE_NAME }}:amd64 \
               ${{ env.IMAGE_NAME }}:arm64
